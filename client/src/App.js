@@ -24,6 +24,8 @@ import ScenarioLibrary from './components/ScenarioLibrary';
 import TransparencyPanel from './components/TransparencyPanel';
 import NewsPanel from './components/NewsPanel';
 import Footer from './components/Footer';
+import HeroSection from './components/HeroSection';
+import AboutSection from './components/AboutSection';
 import axios from 'axios';
 import './App.css';
 
@@ -144,8 +146,9 @@ function App() {
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'info' });
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState('connecting');
+  const [currentView, setCurrentView] = useState('hero'); // 'hero', 'dashboard'
 
-  const API_BASE = 'http://localhost:5001/api';
+  const API_BASE = 'https://ubi-xvpw.onrender.com/api';
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -277,6 +280,22 @@ function App() {
     setNotification({ ...notification, open: false });
   };
 
+  const handleGetStarted = () => {
+    setCurrentView('dashboard');
+    // Smooth scroll to dashboard
+    setTimeout(() => {
+      const dashboardElement = document.getElementById('dashboard-section');
+      if (dashboardElement) {
+        dashboardElement.scrollIntoView({ behavior: 'smooth' });
+      }
+    }, 100);
+  };
+
+  const handleBackToHome = () => {
+    setCurrentView('hero');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
@@ -336,7 +355,7 @@ function App() {
               </Box>
               <Box>
                 <Typography variant="h5" component="div" sx={{ fontWeight: 700, mb: -0.5 }}>
-                  EconoFlow
+                  UBI FLOW
                 </Typography>
                 <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.75rem' }}>
                   Dynamic UBI Intelligence Platform
@@ -344,6 +363,25 @@ function App() {
               </Box>
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              {currentView === 'dashboard' && (
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <Button
+                    variant="outlined"
+                    size="medium"
+                    onClick={handleBackToHome}
+                    sx={{ 
+                      borderColor: 'rgba(255, 255, 255, 0.3)',
+                      color: 'text.primary',
+                      '&:hover': {
+                        borderColor: 'primary.main',
+                        background: 'rgba(0, 212, 255, 0.1)',
+                      }
+                    }}
+                  >
+                    Back to Home
+                  </Button>
+                </motion.div>
+              )}
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                 <Button
                   variant="contained"
@@ -391,7 +429,24 @@ function App() {
           </Toolbar>
         </AppBar>
         
-        <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
+        {/* Hero Section */}
+        {currentView === 'hero' && (
+          <HeroSection 
+            economicData={economicData}
+            onGetStarted={handleGetStarted}
+          />
+        )}
+
+        {/* About Section */}
+        {currentView === 'hero' && (
+          <Container maxWidth="xl" sx={{ mt: 8, mb: 4 }}>
+            <AboutSection />
+          </Container>
+        )}
+
+        {/* Dashboard Section */}
+        {currentView === 'dashboard' && (
+          <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }} id="dashboard-section">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -520,7 +575,8 @@ function App() {
             </Grid>
             </Grid>
           </motion.div>
-        </Container>
+          </Container>
+        )}
         
         {/* Footer */}
         <Footer />

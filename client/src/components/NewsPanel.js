@@ -31,12 +31,6 @@ const NewsPanel = ({ apiBase }) => {
   const [expanded, setExpanded] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchNewsData();
-    const interval = setInterval(fetchNewsData, 300000); // Update every 5 minutes
-    return () => clearInterval(interval);
-  }, [fetchNewsData]);
-
   const fetchNewsData = useCallback(async () => {
     try {
       setLoading(true);
@@ -48,6 +42,12 @@ const NewsPanel = ({ apiBase }) => {
       setLoading(false);
     }
   }, [apiBase]);
+
+  useEffect(() => {
+    fetchNewsData();
+    const interval = setInterval(fetchNewsData, 300000); // Update every 5 minutes
+    return () => clearInterval(interval);
+  }, [fetchNewsData]);
 
   const getSentimentColor = (sentiment) => {
     if (sentiment > 0.2) return '#00e676';

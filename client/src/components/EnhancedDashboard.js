@@ -198,7 +198,6 @@ const EnhancedDashboard = ({
     );
   }
 
-  const formatCurrency = (amount) => amount?.toLocaleString() || '0';
   
   // Enhanced chart configurations with professional styling
   const chartOptions = {

@@ -22,7 +22,7 @@ const Footer = () => {
           <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
             <Box>
               <Typography variant="h6" sx={{ fontWeight: 700, mb: 1, color: 'primary.main' }}>
-                EconoFlow
+                UBI FLOW
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 400 }}>
                 Dynamic UBI Intelligence Platform powered by real-time economic data and AI analysis.
@@ -79,7 +79,7 @@ const Footer = () => {
           
           <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
             <Typography variant="caption" color="text.secondary">
-              © 2024 EconoFlow. Built with React, Node.js, and Material-UI. 
+              © 2024 UBI FLOW. Built with React, Node.js, and Material-UI. 
               Hackathon-ready dynamic UBI simulation platform.
             </Typography>
             
