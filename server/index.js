@@ -19,6 +19,23 @@ const FRED_API_KEY = process.env.FRED_API_KEY || 'e26ae0090bffd64bf880af4dfd3fd6
 const NEWS_API_KEY = process.env.NEWS_API_KEY || 'f415d9bfde984661b543c1de809deeaa';
 const ALPHA_VANTAGE_API_KEY = process.env.ALPHA_VANTAGE_API_KEY || 'VAXW46GMQF6Y2US8';
 
+app.get('/', (req, res) => {
+  res.json({
+    message: 'Welcome to the UBI API. For available endpoints, see /api/health or /api/economic-data.',
+    availableEndpoints: [
+      'GET /health',
+      'GET /api/health',
+      'GET /api/metrics',
+      'GET /api/economic-data',
+      'GET /api/news-sentiment',
+      'GET /api/ubi-calculation',
+      'GET /api/scenarios',
+      'POST /api/simulate',
+      'POST /api/refresh-data'
+    ]
+  });
+});
+
 // Security middleware
 app.use(helmet({
   contentSecurityPolicy: false // Allow for development - should be configured properly in production
