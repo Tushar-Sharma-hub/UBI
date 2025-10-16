@@ -23,7 +23,7 @@ import {
   Legend,
   ArcElement
 } from 'chart.js';
-import { Bar, Line, Doughnut } from 'react-chartjs-2';
+import { Bar, Line } from 'react-chartjs-2';
 import { motion, AnimatePresence } from 'framer-motion';
 import CountUp from 'react-countup';
 import { 

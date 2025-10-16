@@ -20,9 +20,12 @@ echo "🧹 Cleaning up existing processes..."
 lsof -ti:3000 | xargs kill -9 2>/dev/null || true
 lsof -ti:5001 | xargs kill -9 2>/dev/null || true
 
+# Get the project root directory
+PROJECT_ROOT=$(pwd)
+
 # Start the backend server
 echo "🔧 Starting backend server..."
-cd server && node index.js &
+cd "$PROJECT_ROOT/server" && node index.js &
 BACKEND_PID=$!
 
 # Wait for backend to start
@@ -40,7 +43,7 @@ fi
 
 # Start the frontend
 echo "🎨 Starting frontend application..."
-cd ../client && npm start &
+cd "$PROJECT_ROOT/client" && npm start &
 FRONTEND_PID=$!
 
 # Wait for frontend to compile

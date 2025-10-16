@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Typography,
   Box,
@@ -35,9 +35,9 @@ const NewsPanel = ({ apiBase }) => {
     fetchNewsData();
     const interval = setInterval(fetchNewsData, 300000); // Update every 5 minutes
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchNewsData]);
 
-  const fetchNewsData = async () => {
+  const fetchNewsData = useCallback(async () => {
     try {
       setLoading(true);
       const response = await axios.get(`${apiBase}/news-sentiment`);
@@ -47,7 +47,7 @@ const NewsPanel = ({ apiBase }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [apiBase]);
 
   const getSentimentColor = (sentiment) => {
     if (sentiment > 0.2) return '#00e676';

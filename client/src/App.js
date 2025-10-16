@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   ThemeProvider,
   createTheme,
@@ -9,8 +9,15 @@ import {
   Typography,
   Box,
   Grid,
-  Paper
+  Paper,
+  Button,
+  Snackbar,
+  Alert,
+  CircularProgress,
+  Backdrop,
+  Chip
 } from '@mui/material';
+import { motion } from 'framer-motion';
 import EnhancedDashboard from './components/EnhancedDashboard';
 import SimulationControls from './components/SimulationControls';
 import ScenarioLibrary from './components/ScenarioLibrary';
@@ -133,54 +140,87 @@ function App() {
   const [scenarios, setScenarios] = useState([]);
   const [selectedScenario, setSelectedScenario] = useState(null);
   const [simulationData, setSimulationData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [notification, setNotification] = useState({ open: false, message: '', severity: 'info' });
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState('connecting');
 
   const API_BASE = 'http://localhost:5001/api';
 
   useEffect(() => {
     const fetchInitialData = async () => {
+      setIsLoading(true);
+      setConnectionStatus('connecting');
       try {
-        await Promise.all([
-          fetchEconomicData(),
-          fetchUbiCalculation(),
-          fetchScenarios()
+        const [economicResponse, ubiResponse, scenariosResponse] = await Promise.all([
+          axios.get(`${API_BASE}/economic-data`),
+          axios.get(`${API_BASE}/ubi-calculation`),
+          axios.get(`${API_BASE}/scenarios`)
         ]);
+        
+        setEconomicData(economicResponse.data.data || economicResponse.data);
+        setUbiCalculation(ubiResponse.data.data || ubiResponse.data);
+        setScenarios(scenariosResponse.data.data || scenariosResponse.data);
+        
+        setConnectionStatus('connected');
+        setNotification({
+          open: true,
+          message: 'Successfully connected to real-time data sources',
+          severity: 'success'
+        });
       } catch (error) {
         console.error('Failed to fetch initial data:', error);
+        setConnectionStatus('error');
+        setNotification({
+          open: true,
+          message: 'Failed to connect to data sources',
+          severity: 'error'
+        });
+      } finally {
+        setIsLoading(false);
       }
     };
     
     fetchInitialData();
-    const interval = setInterval(fetchEconomicData, 30000); // Update every 30 seconds
+    
+    // Set up polling interval
+    const interval = setInterval(async () => {
+      try {
+        const [economicResponse, ubiResponse] = await Promise.all([
+          axios.get(`${API_BASE}/economic-data`),
+          axios.get(`${API_BASE}/ubi-calculation`)
+        ]);
+        
+        setEconomicData(economicResponse.data.data || economicResponse.data);
+        setUbiCalculation(ubiResponse.data.data || ubiResponse.data);
+      } catch (error) {
+        console.error('Failed to update data:', error);
+      }
+    }, 30000); // Update every 30 seconds
+    
     return () => clearInterval(interval);
-  }, []);
+  }, [API_BASE]);
 
 
-  const fetchEconomicData = async () => {
+  const fetchEconomicData = useCallback(async () => {
     try {
       const response = await axios.get(`${API_BASE}/economic-data`);
-      setEconomicData(response.data);
+      setEconomicData(response.data.data || response.data);
+      setConnectionStatus('connected');
     } catch (error) {
       console.error('Failed to fetch economic data:', error);
+      setConnectionStatus('error');
     }
-  };
+  }, [API_BASE]);
 
-  const fetchUbiCalculation = async () => {
+  const fetchUbiCalculation = useCallback(async () => {
     try {
       const response = await axios.get(`${API_BASE}/ubi-calculation`);
-      setUbiCalculation(response.data);
+      setUbiCalculation(response.data.data || response.data);
     } catch (error) {
       console.error('Failed to fetch UBI calculation:', error);
     }
-  };
-
-  const fetchScenarios = async () => {
-    try {
-      const response = await axios.get(`${API_BASE}/scenarios`);
-      setScenarios(response.data);
-    } catch (error) {
-      console.error('Failed to fetch scenarios:', error);
-    }
-  };
+  }, [API_BASE]);
 
   const handleSimulation = async (data) => {
     try {
@@ -203,21 +243,76 @@ function App() {
   };
 
   const refreshData = async () => {
+    setIsRefreshing(true);
     try {
       await axios.post(`${API_BASE}/refresh-data`);
+      setNotification({
+        open: true,
+        message: 'Data refresh initiated. Updates will appear shortly.',
+        severity: 'info'
+      });
       // Refresh all data after manual update
       setTimeout(() => {
         fetchEconomicData();
         fetchUbiCalculation();
+        setNotification({
+          open: true,
+          message: 'Data successfully refreshed from live sources',
+          severity: 'success'
+        });
       }, 2000);
     } catch (error) {
       console.error('Failed to refresh data:', error);
+      setNotification({
+        open: true,
+        message: 'Failed to refresh data from external sources',
+        severity: 'error'
+      });
+    } finally {
+      setIsRefreshing(false);
     }
+  };
+
+  const handleCloseNotification = () => {
+    setNotification({ ...notification, open: false });
   };
 
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
+      
+      {/* Loading Backdrop */}
+      <Backdrop
+        sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}
+        open={isLoading}
+      >
+        <Box sx={{ textAlign: 'center' }}>
+          <CircularProgress color="primary" size={60} />
+          <Typography variant="h6" sx={{ mt: 2, color: 'primary.main' }}>
+            Connecting to Live Data Sources...
+          </Typography>
+          <Typography variant="body2" sx={{ mt: 1, color: 'text.secondary' }}>
+            Federal Reserve • News API • Alpha Vantage
+          </Typography>
+        </Box>
+      </Backdrop>
+
+      {/* Notification System */}
+      <Snackbar
+        open={notification.open}
+        autoHideDuration={6000}
+        onClose={handleCloseNotification}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <Alert 
+          onClose={handleCloseNotification} 
+          severity={notification.severity} 
+          sx={{ width: '100%' }}
+        >
+          {notification.message}
+        </Alert>
+      </Snackbar>
+      
       <Box sx={{ flexGrow: 1 }}>
         <AppBar position="static" elevation={0}>
           <Toolbar sx={{ py: 1 }}>
@@ -249,20 +344,47 @@ function App() {
               </Box>
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={refreshData}
-                sx={{ color: 'primary.main', borderColor: 'primary.main' }}
-              >
-                Refresh Data
-              </Button>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button
+                  variant="contained"
+                  size="medium"
+                  onClick={refreshData}
+                  disabled={isRefreshing}
+                  startIcon={isRefreshing ? <CircularProgress size={16} color="inherit" /> : undefined}
+                  sx={{ 
+                    background: 'linear-gradient(135deg, #00d4ff 0%, #0099cc 100%)',
+                    '&:hover': {
+                      background: 'linear-gradient(135deg, #0099cc 0%, #007aa3 100%)',
+                    },
+                    '&:disabled': {
+                      background: 'rgba(0, 212, 255, 0.3)',
+                    }
+                  }}
+                >
+                  {isRefreshing ? 'Refreshing...' : 'Refresh Data'}
+                </Button>
+              </motion.div>
               <Box sx={{ textAlign: 'right' }}>
-                <Typography variant="body2" sx={{ color: 'success.main', fontWeight: 600 }}>
-                  ● LIVE DATA
-                </Typography>
-                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                  Federal Reserve • BLS • NewsAPI
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                  <Chip
+                    label={connectionStatus === 'connected' ? 'LIVE DATA' : connectionStatus === 'connecting' ? 'CONNECTING' : 'OFFLINE'}
+                    size="small"
+                    color={connectionStatus === 'connected' ? 'success' : connectionStatus === 'connecting' ? 'warning' : 'error'}
+                    sx={{ 
+                      fontWeight: 600,
+                      '& .MuiChip-label': {
+                        fontSize: '0.75rem'
+                      }
+                    }}
+                  />
+                  {economicData?.lastUpdated && (
+                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                      Updated: {new Date(economicData.lastUpdated).toLocaleTimeString()}
+                    </Typography>
+                  )}
+                </Box>
+                <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.7rem' }}>
+                  Federal Reserve • News API • Alpha Vantage
                 </Typography>
               </Box>
             </Box>
@@ -270,60 +392,138 @@ function App() {
         </AppBar>
         
         <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
-          <Grid container spacing={3}>
-            {/* Main Dashboard */}
-            <Grid item xs={12} lg={8}>
-              <Paper sx={{ p: 2, height: 'fit-content' }}>
-                <EnhancedDashboard 
-                  economicData={economicData}
-                  ubiCalculation={simulationData || ubiCalculation}
-                  isSimulation={!!simulationData}
-                  selectedScenario={selectedScenario}
-                  onResetSimulation={resetSimulation}
-                />
-              </Paper>
-            </Grid>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, staggerChildren: 0.1 }}
+          >
+            <Grid container spacing={3}>
+              {/* Main Dashboard */}
+              <Grid item xs={12} lg={8}>
+                <motion.div
+                  initial={{ opacity: 0, x: -50 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.5, delay: 0.1 }}
+                >
+                  <Paper 
+                    sx={{ 
+                      p: 2, 
+                      height: 'fit-content',
+                      background: 'linear-gradient(135deg, #1a1d29 0%, #232740 100%)',
+                      border: '1px solid rgba(0, 212, 255, 0.2)',
+                      borderRadius: 2,
+                      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)'
+                    }}
+                  >
+                    <EnhancedDashboard 
+                      economicData={economicData}
+                      ubiCalculation={simulationData || ubiCalculation}
+                      isSimulation={!!simulationData}
+                      selectedScenario={selectedScenario}
+                      onResetSimulation={resetSimulation}
+                    />
+                  </Paper>
+                </motion.div>
+              </Grid>
             
             {/* Controls Panel */}
             <Grid item xs={12} lg={4}>
-              <Grid container spacing={2}>
-                <Grid item xs={12}>
-                  <Paper sx={{ p: 2 }}>
-                    <ScenarioLibrary 
-                      scenarios={scenarios}
-                      selectedScenario={selectedScenario}
-                      onScenarioSelect={handleScenarioSelect}
-                    />
-                  </Paper>
+              <motion.div
+                initial={{ opacity: 0, x: 50 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+              >
+                <Grid container spacing={2}>
+                  <Grid item xs={12}>
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.4, delay: 0.3 }}
+                    >
+                      <Paper 
+                        sx={{ 
+                          p: 3,
+                          background: 'linear-gradient(135deg, #1a1d29 0%, #232740 100%)',
+                          border: '1px solid rgba(255, 107, 53, 0.2)',
+                          borderRadius: 2,
+                          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)'
+                        }}
+                      >
+                        <ScenarioLibrary 
+                          scenarios={scenarios}
+                          selectedScenario={selectedScenario}
+                          onScenarioSelect={handleScenarioSelect}
+                        />
+                      </Paper>
+                    </motion.div>
+                  </Grid>
+                  
+                  <Grid item xs={12}>
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.4, delay: 0.4 }}
+                    >
+                      <Paper 
+                        sx={{ 
+                          p: 3,
+                          background: 'linear-gradient(135deg, #1a1d29 0%, #232740 100%)',
+                          border: '1px solid rgba(0, 230, 118, 0.2)',
+                          borderRadius: 2,
+                          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)'
+                        }}
+                      >
+                        <SimulationControls 
+                          economicData={economicData}
+                          onSimulate={handleSimulation}
+                          isSimulating={!!simulationData}
+                        />
+                      </Paper>
+                    </motion.div>
+                  </Grid>
+                  
+                  <Grid item xs={12}>
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.4, delay: 0.5 }}
+                    >
+                      <NewsPanel apiBase={API_BASE} />
+                    </motion.div>
+                  </Grid>
                 </Grid>
-                
-                <Grid item xs={12}>
-                  <Paper sx={{ p: 2 }}>
-                    <SimulationControls 
-                      economicData={economicData}
-                      onSimulate={handleSimulation}
-                      isSimulating={!!simulationData}
-                    />
-                  </Paper>
-                </Grid>
-                
-                <Grid item xs={12}>
-                  <NewsPanel apiBase={API_BASE} />
-                </Grid>
-              </Grid>
+              </motion.div>
             </Grid>
             
             {/* Transparency Panel */}
             <Grid item xs={12}>
-              <Paper sx={{ p: 2 }}>
-                <TransparencyPanel 
-                  calculation={simulationData || ubiCalculation}
-                  economicData={economicData}
-                />
-              </Paper>
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.6 }}
+              >
+                <Paper 
+                  sx={{ 
+                    p: 3,
+                    background: 'linear-gradient(135deg, #1a1d29 0%, #232740 100%)',
+                    border: '1px solid rgba(255, 184, 77, 0.2)',
+                    borderRadius: 2,
+                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)'
+                  }}
+                >
+                  <TransparencyPanel 
+                    calculation={simulationData || ubiCalculation}
+                    economicData={economicData}
+                  />
+                </Paper>
+              </motion.div>
             </Grid>
-          </Grid>
+            </Grid>
+          </motion.div>
         </Container>
+        
+        {/* Footer */}
+        <Footer />
       </Box>
     </ThemeProvider>
   );

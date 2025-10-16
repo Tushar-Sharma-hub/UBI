@@ -1,0 +1,12 @@
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  override existing env vars with { override: true }
+Fetching real-time economic data...
+Fetching economic news and sentiment...
+News sentiment updated: 0.195
+Economic data updated: {
+  unemployment: '4.3%',
+  inflation: '2.3%',
+  avgIncome: '$83,730',
+  costOfLiving: 80,
+  gdp: '$30,485.729B',
+  sp500: '$665.17'
+}
