@@ -148,7 +148,7 @@ function App() {
   const [connectionStatus, setConnectionStatus] = useState('connecting');
   const [currentView, setCurrentView] = useState('hero'); // 'hero', 'dashboard'
 
-  const API_BASE = 'https://ubi-xvpw.onrender.com/api';
+  const API_BASE = process.env.REACT_APP_API_URL || 'https://ubi-xvpw.onrender.com/api';
 
   useEffect(() => {
     const fetchInitialData = async () => {

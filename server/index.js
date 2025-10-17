@@ -70,9 +70,22 @@ const limiter = rateLimit({
 
 app.use('/api/', limiter);
 
-// CORS configuration
+// CORS configuration (supports multiple allowed origins)
+const allowedOriginsEnv = process.env.CORS_ORIGIN || 'http://localhost:3000,https://ubi-flow.netlify.app';
+const allowedOrigins = allowedOriginsEnv
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean);
+
 const corsOptions = {
-  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, curl, server-to-server)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error(`CORS blocked for origin: ${origin}`));
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
