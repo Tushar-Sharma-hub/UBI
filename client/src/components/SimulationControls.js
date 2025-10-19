@@ -7,7 +7,8 @@ import {
   Button,
   FormControl,
   Chip,
-  Divider
+  Divider,
+  CircularProgress
 } from '@mui/material';
 import { PlayArrow, Refresh } from '@mui/icons-material';
 
@@ -19,6 +20,7 @@ const SimulationControls = ({ economicData, onSimulate, isSimulating }) => {
     population: 1000000,
     averageIncome: 45000
   });
+  const [isRunning, setIsRunning] = useState(false);
 
   // Update simulation params when economic data changes
   useEffect(() => {
@@ -48,8 +50,13 @@ const SimulationControls = ({ economicData, onSimulate, isSimulating }) => {
     }));
   };
 
-  const handleSimulate = () => {
-    onSimulate(simulationParams);
+  const handleSimulate = async () => {
+    setIsRunning(true);
+    try {
+      await onSimulate(simulationParams);
+    } finally {
+      setIsRunning(false);
+    }
   };
 
   const resetToCurrentData = () => {
@@ -231,21 +238,39 @@ const SimulationControls = ({ economicData, onSimulate, isSimulating }) => {
       </FormControl>
 
       {/* Action Buttons */}
-      <Box display="flex" gap={2} mt={3}>
+      <Box display="flex" gap={2} mt={3} flexDirection={{ xs: 'column', sm: 'row' }}>
         <Button
           variant="contained"
-          startIcon={<PlayArrow />}
+          startIcon={isRunning ? <CircularProgress size={16} color="inherit" /> : <PlayArrow />}
           onClick={handleSimulate}
-          fullWidth
-          sx={{ mb: 1 }}
+          disabled={isRunning}
+          sx={{ 
+            flex: 1,
+            background: 'linear-gradient(135deg, #00d4ff 0%, #0099cc 100%)',
+            '&:hover': {
+              background: 'linear-gradient(135deg, #0099cc 0%, #007aa3 100%)',
+            },
+            '&:disabled': {
+              background: 'rgba(0, 212, 255, 0.3)',
+            }
+          }}
         >
-          Run Simulation
+          {isRunning ? 'Running...' : 'Run Simulation'}
         </Button>
         <Button
           variant="outlined"
           startIcon={<Refresh />}
           onClick={resetToCurrentData}
-          fullWidth
+          disabled={isRunning}
+          sx={{
+            flex: 1,
+            borderColor: 'rgba(255, 255, 255, 0.3)',
+            color: 'text.primary',
+            '&:hover': {
+              borderColor: 'primary.main',
+              background: 'rgba(0, 212, 255, 0.1)',
+            }
+          }}
         >
           Reset to Current
         </Button>

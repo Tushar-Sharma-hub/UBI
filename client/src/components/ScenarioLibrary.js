@@ -17,7 +17,7 @@ import {
   CheckCircle
 } from '@mui/icons-material';
 
-const ScenarioLibrary = ({ scenarios, selectedScenario, onScenarioSelect }) => {
+const ScenarioLibrary = ({ scenarios, selectedScenario, onScenarioSelect, isSimulating }) => {
   const getScenarioIcon = (scenarioId) => {
     switch (scenarioId) {
       case 'crisis':
@@ -150,9 +150,29 @@ const ScenarioLibrary = ({ scenarios, selectedScenario, onScenarioSelect }) => {
                   variant={selectedScenario?.id === scenario.id ? "outlined" : "contained"}
                   color={getScenarioColor(scenario.id)}
                   onClick={() => onScenarioSelect(scenario)}
+                  disabled={isSimulating}
                   size="small"
+                  sx={{
+                    background: selectedScenario?.id === scenario.id ? 'transparent' : 
+                      scenario.id === 'crisis' ? 'linear-gradient(135deg, #ff3d71 0%, #cc2e5a 100%)' :
+                      scenario.id === 'boom' ? 'linear-gradient(135deg, #00e676 0%, #00b248 100%)' :
+                      scenario.id === 'disaster' ? 'linear-gradient(135deg, #ffb74d 0%, #cc933e 100%)' :
+                      'linear-gradient(135deg, #00d4ff 0%, #0099cc 100%)',
+                    '&:hover': {
+                      background: selectedScenario?.id === scenario.id ? 'rgba(255, 255, 255, 0.1)' :
+                        scenario.id === 'crisis' ? 'linear-gradient(135deg, #cc2e5a 0%, #a02547 100%)' :
+                        scenario.id === 'boom' ? 'linear-gradient(135deg, #00b248 0%, #008f3a 100%)' :
+                        scenario.id === 'disaster' ? 'linear-gradient(135deg, #cc933e 0%, #a67a32 100%)' :
+                        'linear-gradient(135deg, #0099cc 0%, #007aa3 100%)',
+                    },
+                    '&:disabled': {
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      color: 'rgba(255, 255, 255, 0.5)'
+                    }
+                  }}
                 >
-                  {selectedScenario?.id === scenario.id ? "Active Scenario" : "Apply Scenario"}
+                  {selectedScenario?.id === scenario.id ? "Active Scenario" : 
+                   isSimulating ? "Applying..." : "Apply Scenario"}
                 </Button>
               </CardActions>
             </Card>

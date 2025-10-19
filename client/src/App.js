@@ -19,6 +19,7 @@ import {
 } from '@mui/material';
 import { motion } from 'framer-motion';
 import EnhancedDashboard from './components/EnhancedDashboard';
+import ErrorBoundary from './components/ErrorBoundary';
 import SimulationControls from './components/SimulationControls';
 import ScenarioLibrary from './components/ScenarioLibrary';
 import TransparencyPanel from './components/TransparencyPanel';
@@ -227,16 +228,34 @@ function App() {
 
   const handleSimulation = async (data) => {
     try {
+      setNotification({ open: true, message: 'Running simulation...', severity: 'info' });
       const response = await axios.post(`${API_BASE}/simulate`, data);
-      setSimulationData(response.data);
+      // API returns { success, data, meta }; dashboard expects fields at root
+      const result = response.data?.data || response.data;
+      setSimulationData(result);
+      setNotification({ 
+        open: true, 
+        message: 'Simulation completed successfully!', 
+        severity: 'success' 
+      });
     } catch (error) {
       console.error('Failed to run simulation:', error);
+      setNotification({ 
+        open: true, 
+        message: `Simulation failed: ${error.response?.data?.message || error.message}`, 
+        severity: 'error' 
+      });
     }
   };
 
-  const handleScenarioSelect = (scenario) => {
+  const handleScenarioSelect = async (scenario) => {
     setSelectedScenario(scenario);
-    handleSimulation(scenario.data);
+    setNotification({ 
+      open: true, 
+      message: `Applying ${scenario.name} scenario...`, 
+      severity: 'info' 
+    });
+    await handleSimulation(scenario.data);
   };
 
   const resetSimulation = () => {
@@ -319,7 +338,7 @@ function App() {
       {/* Notification System */}
       <Snackbar
         open={notification.open}
-        autoHideDuration={6000}
+        autoHideDuration={8000}
         onClose={handleCloseNotification}
         anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
       >
@@ -452,6 +471,7 @@ function App() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, staggerChildren: 0.1 }}
           >
+            <ErrorBoundary>
             <Grid container spacing={3}>
               {/* Main Dashboard */}
               <Grid item xs={12} lg={8}>
@@ -508,6 +528,7 @@ function App() {
                           scenarios={scenarios}
                           selectedScenario={selectedScenario}
                           onScenarioSelect={handleScenarioSelect}
+                          isSimulating={!!simulationData}
                         />
                       </Paper>
                     </motion.div>
@@ -574,6 +595,7 @@ function App() {
               </motion.div>
             </Grid>
             </Grid>
+            </ErrorBoundary>
           </motion.div>
           </Container>
         )}
