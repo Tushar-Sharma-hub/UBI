@@ -1,5 +1,4 @@
 # 🚀 Dynamic Universal Basic Income Simulator
-## *Winner of [Hackathon Name] - Best Technical Innovation*
 
 **The world's first real-time UBI calculator powered by live economic data and AI sentiment analysis.**
 
